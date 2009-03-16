@@ -1,0 +1,11 @@
+USAGE: dbbackup <environment> [/full/path/to/mysqldump]
+
+dbbackup is a short Ruby script for backing up a MySql database in a Rails environment. 
+
+Basically it gets the DB info from config/database.yml, dumps it into a raw SQL file with mysqldump, gzips that and adds/commits it to Subversion.
+
+Examples:
+
+- dbbackup production
+
+- dbbackup development /usr/local/mysql/bin/mysqldump
