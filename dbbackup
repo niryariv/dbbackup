@@ -1,32 +1,50 @@
 #!/usr/bin/env ruby
 
-# USAGE: dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-commit]
+USAGE = 'dbbackup <environment> [--mysqldump-path=</full/path/to/mysqldump>] [--no-gzip] [--no-svn]'
 
+require 'getoptlong'
 require 'yaml'
 
-RAILS_ROOT  = File.dirname(__FILE__) + '/..'
-RAILS_ENV = ARGV[0]
-MYSQLDUMP_PATH = (ARGV[1].nil? ? `which mysqldump`.chomp : ARGV[1])
-NO_GZIP = ARGV.include?('--no-gzip')
-NO_SVN = ARGV.include?('--no-svn')
-dump_file = "#{RAILS_ROOT}/db/dump_#{RAILS_ENV}.sql"
+begin
+  RAILS_ROOT  = File.dirname(__FILE__) + '/..'
+  RAILS_ENV = ARGV[0]
+  no_gzip = false ; no_svn = false ; mysqldump_path = `which mysqldump`.chomp
+  
+  opts = GetoptLong.new(
+            ['--mysqldump-path', GetoptLong::REQUIRED_ARGUMENT],
+            ['--no-gzip', GetoptLong::NO_ARGUMENT],
+            ['--no-svn', GetoptLong::NO_ARGUMENT]
+          ).each do |arg, val|
+              mysqldump_path = val.gsub(/^=/,'') if arg == '--mysqldump-path'
+              no_gzip = true if arg == '--no-gzip'
+              no_svn  = true if arg == '--no-svn'
+            end
 
-settings = YAML::load_file("#{RAILS_ROOT}/config/database.yml")[RAILS_ENV]
+  #raise "env: #{RAILS_ENV} mysqldumppath: #{mysqldump_path}  no_gzip: #{no_gzip} no_svn: #{no_svn}"
 
-abort "USAGE: dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-commit]" if settings.nil?
+  dump_file = "#{RAILS_ROOT}/db/dump_#{RAILS_ENV}.sql"
+  settings = YAML::load_file("#{RAILS_ROOT}/config/database.yml")[RAILS_ENV]
 
-abort "Can't find mysqldump. Try running with 'USAGE: dbbackup #{RAILS_ENV} /full/path/to/mysqldump [--no-gzip] [--no-commit]''" unless File.exists?(MYSQLDUMP_PATH)
+  raise "environment missing or not found in config/database.yml" if settings.nil?
+  raise "Can't find mysqldump. Try running with --mysqldump_path </full/path/to/mysqldump>" unless File.exists?(mysqldump_path)
 
-`#{MYSQLDUMP_PATH} -u #{settings['username']} --password=#{settings['password']} #{settings['database']} > #{dump_file}`
 
-unless NO_GZIP
-  `gzip #{dump_file}` 
-  dump_file += '.gz'
-end
+  # Get going
+  `#{mysqldump_path} -u #{settings['username']} --password=#{settings['password']} #{settings['database']} > #{dump_file}`
 
-abort "Failed to write '#{dump_file}' (bad mysqldump path?)" if File.size?(dump_file).nil? or (File.mtime(dump_file) - Time.now) > 60
+  unless no_gzip
+    `gzip #{dump_file}` 
+    dump_file += '.gz'
+  end
 
-unless NO_SVN
-  `svn add #{dump_file}` if `svn st #{dump_file}`[0].chr == '?'
-  `svn commit #{dump_file} -m '#{RAILS_ENV} database dump'`
+  raise "Failed to write '#{dump_file}'" if File.size?(dump_file).nil? or (File.mtime(dump_file) - Time.now) > 60
+
+  unless no_svn
+    `svn add #{dump_file}` if `svn st #{dump_file}`[0].chr == '?'
+    `svn commit #{dump_file} -m '#{RAILS_ENV} database dump'`
+  end
+
+rescue Exception=>e
+  puts "dbbackup: #{e}"
+  puts "USAGE: #{USAGE}"
 end

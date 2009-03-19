@@ -2,7 +2,7 @@ NAME
 	dbbackup -- back up a MySQL database in a Rails environment.
 
 SYNOPSIS
-	dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-svn]
+	dbbackup <environment> [--mysqldump-path=</full/path/to/mysqldump>] [--no-gzip] [--no-svn]
 
 DESCRIPTION
     By default, dbbackup gets the DB info from config/database.yml, dumps and gzips it into "<Rails Root>/db/dump_<environment>.sql.gz",
@@ -11,12 +11,16 @@ DESCRIPTION
 	
 	The following parameters are available:
 	<environment> 			Required, must be defined in config/database.yml
-	/path/to/mysqldump		If mysqldump isn't in PATH or has a different name than "mysqldump" (eg, some OS X installs use "mysqldump5")
+	--mysqldump-path=		If mysqldump isn't in PATH or has a different name than "mysqldump" (eg, some OS X installs use "mysqldump5")
 	--no-gzip				Don't gzip the output file
 	--no-commit				Don't commit the output file to Subversion			
 	
 EXAMPLES
-	dbbackup production		Creates 'db/dump_production.sql.gz' and commits it to Subversion.
+	Create 'db/dump_production.sql.gz' and commit it to Subversion (if it's a new file, add it to Subversion and then commit)
+		
+		dbbackup production		
 
-	dbbackup development /usr/local/mysql/bin/mysqldump --no-gzip --no-svn
-							Creates 'db/dump_development.sql'
+	Create 'db/dump_development.sql' (not zipped) and don't commit to Subversion. Use mysqldump at /usr/local/mysql/bin/mysqldump
+	
+		dbbackup development --mysqldump-path=/usr/local/mysql/bin/mysqldump --no-gzip --no-svn
+							
