@@ -1,11 +1,22 @@
-USAGE: dbbackup <environment> [/full/path/to/mysqldump]
+NAME
+	dbbackup -- back up a MySQL database in a Rails environment.
 
-dbbackup is a short Ruby script for backing up a MySql database in a Rails environment. 
+SYNOPSIS
+	dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-svn]
 
-Basically it gets the DB info from config/database.yml, dumps it into a raw SQL file with mysqldump, gzips that and adds/commits it to Subversion.
+DESCRIPTION
+    By default, dbbackup gets the DB info from config/database.yml, dumps and gzips it into "<Rails Root>/db/dump_<environment>.sql.gz",
+	and	adds/commits that to Subversion.
+	
+	
+	The following parameters are available:
+	<environment> 			Required, must be defined in config/database.yml
+	/path/to/mysqldump		If mysqldump isn't in PATH or has a different name than "mysqldump" (eg, some OS X installs use "mysqldump5")
+	--no-gzip				Don't gzip the output file
+	--no-commit				Don't commit the output file to Subversion			
+	
+EXAMPLES
+	dbbackup production		Creates 'db/dump_production.sql.gz' and commits it to Subversion.
 
-Examples:
-
-- dbbackup production
-
-- dbbackup development /usr/local/mysql/bin/mysqldump
+	dbbackup development /usr/local/mysql/bin/mysqldump --no-gzip --no-svn
+							Creates 'db/dump_development.sql'

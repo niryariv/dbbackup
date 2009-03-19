@@ -1,22 +1,32 @@
 #!/usr/bin/env ruby
 
-# USAGE: dbbackup <environment> [/full/path/to/mysqldump]
+# USAGE: dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-commit]
 
 require 'yaml'
 
-RAILS_ROOT  = File.dirname(__FILE__) + '/../'
+RAILS_ROOT  = File.dirname(__FILE__) + '/..'
 RAILS_ENV = ARGV[0]
 MYSQLDUMP_PATH = (ARGV[1].nil? ? `which mysqldump`.chomp : ARGV[1])
-DUMP_FILE = "#{RAILS_ROOT}/db/dump_#{RAILS_ENV}.sql.gz"
+NO_GZIP = ARGV.include?('--no-gzip')
+NO_SVN = ARGV.include?('--no-svn')
+dump_file = "#{RAILS_ROOT}/db/dump_#{RAILS_ENV}.sql"
+
 settings = YAML::load_file("#{RAILS_ROOT}/config/database.yml")[RAILS_ENV]
 
-abort "USAGE: dbbackup <environment> [/full/path/to/mysqldump]" if settings.nil?
+abort "USAGE: dbbackup <environment> [/full/path/to/mysqldump] [--no-gzip] [--no-commit]" if settings.nil?
 
-abort "Can't find mysqldump. Run with as 'dbbackup #{RAILS_ENV} </full/path/to/mysqldump> '" unless File.exists?(MYSQLDUMP_PATH)
+abort "Can't find mysqldump. Try running with 'USAGE: dbbackup #{RAILS_ENV} /full/path/to/mysqldump [--no-gzip] [--no-commit]''" unless File.exists?(MYSQLDUMP_PATH)
 
-`#{MYSQLDUMP_PATH} -u #{settings['username']} --password=#{settings['password']} #{settings['database']} | gzip > #{DUMP_FILE}`
+`#{MYSQLDUMP_PATH} -u #{settings['username']} --password=#{settings['password']} #{settings['database']} > #{dump_file}`
 
-abort "Failed to write '#{DUMP_FILE}' (bad mysqldump path?)" if File.size?(DUMP_FILE).nil? or (File.mtime(DUMP_FILE) - Time.now) > 60
+unless NO_GZIP
+  `gzip #{dump_file}` 
+  dump_file += '.gz'
+end
 
-`svn add #{DUMP_FILE}` if `svn st #{DUMP_FILE}`[0].chr == '?'
-`svn commit #{DUMP_FILE} -m '#{RAILS_ENV} database dump'`
+abort "Failed to write '#{dump_file}' (bad mysqldump path?)" if File.size?(dump_file).nil? or (File.mtime(dump_file) - Time.now) > 60
+
+unless NO_SVN
+  `svn add #{dump_file}` if `svn st #{dump_file}`[0].chr == '?'
+  `svn commit #{dump_file} -m '#{RAILS_ENV} database dump'`
+end
