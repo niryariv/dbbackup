@@ -26,7 +26,7 @@ begin
   settings = YAML::load_file("#{RAILS_ROOT}/config/database.yml")[RAILS_ENV]
 
   raise "environment missing or not found in config/database.yml" if settings.nil?
-  raise "Can't find mysqldump. Try running with --mysqldump_path </full/path/to/mysqldump>" unless File.exists?(mysqldump_path)
+  raise "Can't find mysqldump. Try running with --mysqldump_path=</full/path/to/mysqldump>" unless File.exists?(mysqldump_path)
 
 
   # Get going
