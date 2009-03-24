@@ -13,7 +13,7 @@ DESCRIPTION
 	<environment> 			Required, must be defined in config/database.yml
 	--mysqldump-path=		If mysqldump isn't in PATH or has a different name than "mysqldump" (eg, some OS X installs use "mysqldump5")
 	--no-gzip				Don't gzip the output file
-	--no-commit				Don't commit the output file to Subversion			
+	--no-svn				Don't commit the output file to Subversion			
 	
 EXAMPLES
 	Create 'db/dump_production.sql.gz' and commit it to Subversion (if it's a new file, add it to Subversion and then commit)
